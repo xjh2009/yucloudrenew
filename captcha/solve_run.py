@@ -1,13 +1,18 @@
 ﻿# -*- coding: utf-8 -*-
 """
-端到端: 连浏览器 -> 触发腾讯云图形点选验证码 -> OpenCV 定位 -> 真实鼠标点击 -> 读接口判成败
+【训练数据采集器】—— 不是签到主程序, 也不进 CI。
 
-  本地:  先手动开一个带调试端口的 Chrome
-         start chrome --remote-debugging-port=9222 https://cloud.tencent.com/product/captcha
-         python captcha/solve_run.py 20
-  CI:    直接跑(会自动启动 Chromium, 需 xvfb)
-         xvfb-run -a python captcha/solve_run.py 5
-  采集:  python captcha/solve_run.py 120 --collect   (把样本存到系统临时目录)
+去 cloud.tencent.com/product/captcha 的「图形点选」demo 反复抓题, 把每次的
+(背景图, 提示图, 我选的位置, 腾讯返回的 errorCode) 存成 npz 样本:
+    errorCode=0  ->  腾讯确认过这次点对了 -> 其中的位置是真值(正例)
+    errorCode=50 ->  至少有一个点错了      -> 用来做负例/难负例
+
+样本落在系统临时目录 tencent-cap-dataset, 用 captcha/train_svm.py 训练。
+
+    python captcha\solve_run.py 120 --collect     # 采集
+    python captcha\train_svm.py                  # 训练
+
+日常签到请用 captcha/rainyun.py。
 """
 import asyncio, io, sys, os, random, time, json, tempfile
 sys.stdout.reconfigure(encoding='utf-8', errors='replace')
