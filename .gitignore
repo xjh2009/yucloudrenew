@@ -1,0 +1,14 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.DS_Store
+Thumbs.db
+
+# 运行时产物 (Cookie / 临时目录) —— 不要提交
+.rainyun-cookies/
+cookies/
+temp/
+*.log
+*.out

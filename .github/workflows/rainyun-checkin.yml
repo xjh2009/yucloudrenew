@@ -1,0 +1,64 @@
+name: rainyun-checkin
+
+on:
+  schedule:
+    # UTC 04:00 = 北京时间 12:00
+    - cron: "0 4 * * *"
+  workflow_dispatch:
+    inputs:
+      user:
+        description: "雨云账号(留空则用 Secret)"
+        default: ""
+      pass:
+        description: "雨云密码(留空则用 Secret)"
+        default: ""
+
+jobs:
+  checkin:
+    name: 雨云每日签到
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      RAINYUN_USER: ${{ inputs.user || secrets.RAINYUN_USER }}
+      RAINYUN_PASS: ${{ inputs.pass || secrets.RAINYUN_PASS }}
+      HEADLESS: "false"          # xvfb 下用有头模式, 降低被风控概率
+      DEBUG: "true"
+      MAX_WORKERS: "2"
+      CHECKIN_MAX_RETRIES: "2"
+      NOTIFY_ONLY_FAILURE: "false"
+      COOKIE_DIR: ${{ github.workspace }}/.rainyun-cookies
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: 安装依赖
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          python -m playwright install --with-deps chromium
+
+      - name: 安装 xvfb (给有头模式提供虚拟显示)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xvfb
+
+      - name: 缓存 Cookie
+        uses: actions/cache@v4
+        with:
+          path: .rainyun-cookies
+          key: rainyun-cookies-${{ github.run_id }}
+          restore-keys: rainyun-cookies-
+
+      - name: 执行签到
+        run: xvfb-run -a --server-args="-screen 0 1440x900x24" python captcha/rainyun.py
+
+      - name: 保存 Cookie
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: .rainyun-cookies
+          key: rainyun-cookies-latest-${{ github.run_id }}
