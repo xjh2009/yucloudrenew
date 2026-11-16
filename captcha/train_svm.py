@@ -1,4 +1,4 @@
-﻿# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 """
 训练 HOG + PCA + SVM 匹配打分器 (OpenCV 全栈)
   数据: 每轮 (bg, tip, 我选的boxes, errorCode) —— errorCode 是腾讯给的真值
