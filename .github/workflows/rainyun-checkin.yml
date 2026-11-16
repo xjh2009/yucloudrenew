@@ -25,6 +25,7 @@ jobs:
       DEBUG: "true"
       MAX_WORKERS: "2"
       CHECKIN_MAX_RETRIES: "2"
+      CAPTCHA_TRIES: "4"
       NOTIFY_ONLY_FAILURE: "false"
       COOKIE_DIR: ${{ github.workspace }}/.rainyun-cookies
     steps:
