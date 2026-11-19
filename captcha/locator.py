@@ -83,7 +83,21 @@ def _to_canvas(mask, size=96):
     return canvas
 
 
-HOG = cv2.HOGDescriptor((64, 64), (16, 16), (8, 8), (8, 8), 9)
+_HOG = None            # 惰性创建: 有的环境(如 CI 上的系统 cv2)没有 HOGDescriptor
+_HOG_OK = None         # None=未探测, True/False=探测结果
+
+
+def _get_hog():
+    global _HOG, _HOG_OK
+    if _HOG_OK is None:
+        try:
+            _HOG = cv2.HOGDescriptor((64, 64), (16, 16), (8, 8), (8, 8), 9)
+            _HOG_OK = True
+        except Exception:
+            _HOG_OK = False
+    return _HOG if _HOG_OK else None
+
+
 _SVM = None
 _NORM = None
 MODEL_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "captcha_svm.xml")
@@ -111,6 +125,8 @@ def pair_feature(tpl, cand):
     (模板mask, 候选mask) -> 特征向量
     核心: 把两个形状的轮廓叠加成一张图(模板=白, 候选=灰), HOG 描述"重合程度",
           这比左右拼接直接得多, SVM 能直接学到"两个形状是否对得上"
+    没有 HOGDescriptor 的环境降级: HOG 部分填 0, 只用几何标量
+    (长度必须跟训练时一致, 所以用零占位, 不改向量长度)
     """
     ca = _to_canvas(tpl, 64)
     cb = _to_canvas(cand, 64)
@@ -119,7 +135,11 @@ def pair_feature(tpl, cand):
     both = np.zeros((64, 64), np.uint8)
     both[ea > 0] = 255
     both[eb > 0] = np.maximum(both[eb > 0], 130)
-    h = HOG.compute(both).flatten()
+    hog = _get_hog()
+    if hog is not None:
+        h = hog.compute(both).flatten()
+    else:
+        h = np.zeros(1764, np.float32)      # 7*7*2*2*9 = 1764, 跟有 HOG 时同长度
     ta = cv2.resize(ca, (32, 32), interpolation=cv2.INTER_AREA)
     tb = cv2.resize(cb, (32, 32), interpolation=cv2.INTER_AREA)
     iou = _iou_at(ta, tb)
