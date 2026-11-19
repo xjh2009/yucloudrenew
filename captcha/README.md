@@ -52,13 +52,8 @@ $env:RAINYUN_PASS = "pass1`npass2"
 
 ## GitHub Actions
 
-`.github/workflows/rainyun-checkin.yml`，三个 job：
-
-| Job | 触发 | 内容 |
-|---|---|---|
-| `regression` | push / PR / 定时 | 离线回归：`python captcha/ci_test.py`，定位准确率不达标就红（不联网、不开浏览器） |
-| `train-smoke` | push / PR / 定时 | 训练流程冒烟：有采集数据才跑，没数据跳过 |
-| `checkin` | 每天 UTC 04:00（北京时间 12:00） | 真跑签到；`needs: regression`，回归不过就不签 |
+`.github/workflows/rainyun-checkin.yml`，就一个 job：**签到**。
+每天 UTC 04:00（北京时间 12:00）自动跑，也可以手动触发。
 
 **唯一需要配的 Secret**：`RAINYUN_USER` / `RAINYUN_PASS`（多行=多账户）。
 
